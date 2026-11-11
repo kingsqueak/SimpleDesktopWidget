@@ -131,8 +131,7 @@ struct ClockView: View {
 
     var body: some View {
         let sc = s.scale
-        TimelineView(.periodic(from: .now, by: 1)) { ctx in
-            let d = ctx.date
+        Ticking(every: 1) { d in
             VStack(alignment: .leading, spacing: 2 * sc) {
                 HStack(alignment: .firstTextBaseline, spacing: 3 * sc) {
                     Text(hm(d))
@@ -246,6 +245,7 @@ struct WeatherView: View {
 
 struct AlertBanner: View {
     @EnvironmentObject var s: Settings
+    @Environment(\.widgetNow) private var fixedNow
     let alert: WeatherAlert
 
     var body: some View {
@@ -259,7 +259,7 @@ struct AlertBanner: View {
                 .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             if let end = alert.ends {
-                Text("until \(end.formatted(date: Calendar.current.isDateInToday(end) ? .omitted : .abbreviated, time: .shortened))")
+                Text("until \(end.formatted(date: Calendar.current.isDate(end, inSameDayAs: fixedNow ?? Date()) ? .omitted : .abbreviated, time: .shortened))")
                     .font(s.font(11 * sc, s.textWeight))
                     .lineLimit(1)
                     .opacity(0.9)
@@ -279,8 +279,8 @@ struct LightningLine: View {
     var body: some View {
         let sc = s.scale
         let close = summary.nearestKm <= 16     // ~10 miles: the usual "go indoors" distance
-        TimelineView(.periodic(from: .now, by: 30)) { ctx in
-            let mins = max(0, Int(ctx.date.timeIntervalSince(summary.latest) / 60))
+        Ticking(every: 30) { now in
+            let mins = max(0, Int(now.timeIntervalSince(summary.latest) / 60))
             HStack(spacing: 6 * sc) {
                 Image(systemName: "bolt.fill")
                     .foregroundStyle(close ? .red : .yellow)
@@ -387,8 +387,7 @@ struct EventsView: View {
 
     var body: some View {
         let sc = s.scale
-        TimelineView(.periodic(from: .now, by: 30)) { ctx in
-            let now = ctx.date
+        Ticking(every: 30) { now in
             VStack(alignment: .leading, spacing: 7 * sc) {
                 HStack(spacing: 5 * sc) {
                     Image(systemName: "calendar")
@@ -479,6 +478,35 @@ struct TextHalo: ViewModifier {
                 .shadow(color: color.opacity(min(1, strength * 1.2)), radius: 0.6 * scale)
                 .shadow(color: color.opacity(strength * 0.9), radius: 1.2 * scale)
                 .shadow(color: color.opacity(strength * 0.6), radius: 2.5 * scale)
+        }
+    }
+}
+
+// MARK: Time source
+
+private struct WidgetNowKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+
+extension EnvironmentValues {
+    /// A fixed "now" for snapshots; nil means the real clock.
+    var widgetNow: Date? {
+        get { self[WidgetNowKey.self] }
+        set { self[WidgetNowKey.self] = newValue }
+    }
+}
+
+/// Redraws on a timer with the current time, or once with `widgetNow` when set.
+struct Ticking<Content: View>: View {
+    @Environment(\.widgetNow) private var fixed
+    let every: TimeInterval
+    @ViewBuilder let content: (Date) -> Content
+
+    var body: some View {
+        if let fixed {
+            content(fixed)
+        } else {
+            TimelineView(.periodic(from: .now, by: every)) { ctx in content(ctx.date) }
         }
     }
 }

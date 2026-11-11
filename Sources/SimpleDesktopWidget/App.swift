@@ -8,6 +8,11 @@ import SwiftUI
 @main
 enum Main {
     static func main() {
+        // `SimpleDesktopWidget --snapshot out.png`: render the README screenshot and exit.
+        if let i = CommandLine.arguments.firstIndex(of: "--snapshot"), i + 1 < CommandLine.arguments.count {
+            let path = CommandLine.arguments[i + 1]
+            exit(MainActor.assumeIsolated { Snapshot.render(to: path) } ? 0 : 1)
+        }
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

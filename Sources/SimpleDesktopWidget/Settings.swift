@@ -53,39 +53,45 @@ final class Settings: ObservableObject {
 
     private let d = UserDefaults.standard
 
+    /// Snapshot mode (`--snapshot`): settings are changed in memory only, never saved.
+    static var snapshotMode = false
+    private func save(_ value: Any?, forKey key: String) {
+        if !Settings.snapshotMode { d.set(value, forKey: key) }
+    }
+
     // Appearance
-    @Published var fontFamily: String { didSet { d.set(fontFamily, forKey: "fontFamily") } }
-    @Published var clockWeight: FontWeightChoice { didSet { d.set(clockWeight.rawValue, forKey: "clockWeight") } }
-    @Published var textWeight: FontWeightChoice { didSet { d.set(textWeight.rawValue, forKey: "textWeight") } }
-    @Published var scale: Double { didSet { d.set(scale, forKey: "scale") } }
-    @Published var textColor: RGBA { didSet { d.set(textColor.array, forKey: "textColor") } }
-    @Published var backgroundColor: RGBA { didSet { d.set(backgroundColor.array, forKey: "backgroundColor") } }
-    @Published var backgroundOpacity: Double { didSet { d.set(backgroundOpacity, forKey: "backgroundOpacity") } }
-    @Published var displayOpacity: Double { didSet { d.set(displayOpacity, forKey: "displayOpacity") } }
-    @Published var shadowStrength: Double { didSet { d.set(shadowStrength, forKey: "shadowStrength") } }
-    @Published var textHalo: Double { didSet { d.set(textHalo, forKey: "textHalo") } }
-    @Published var frostedGlass: Bool { didSet { d.set(frostedGlass, forKey: "frostedGlass") } }
-    @Published var keepIconsClear: Bool { didSet { d.set(keepIconsClear, forKey: "keepIconsClear") } }
+    @Published var fontFamily: String { didSet { save(fontFamily, forKey: "fontFamily") } }
+    @Published var clockWeight: FontWeightChoice { didSet { save(clockWeight.rawValue, forKey: "clockWeight") } }
+    @Published var textWeight: FontWeightChoice { didSet { save(textWeight.rawValue, forKey: "textWeight") } }
+    @Published var scale: Double { didSet { save(scale, forKey: "scale") } }
+    @Published var textColor: RGBA { didSet { save(textColor.array, forKey: "textColor") } }
+    @Published var backgroundColor: RGBA { didSet { save(backgroundColor.array, forKey: "backgroundColor") } }
+    @Published var backgroundOpacity: Double { didSet { save(backgroundOpacity, forKey: "backgroundOpacity") } }
+    @Published var displayOpacity: Double { didSet { save(displayOpacity, forKey: "displayOpacity") } }
+    @Published var shadowStrength: Double { didSet { save(shadowStrength, forKey: "shadowStrength") } }
+    @Published var textHalo: Double { didSet { save(textHalo, forKey: "textHalo") } }
+    @Published var frostedGlass: Bool { didSet { save(frostedGlass, forKey: "frostedGlass") } }
+    @Published var keepIconsClear: Bool { didSet { save(keepIconsClear, forKey: "keepIconsClear") } }
 
     // Clock
-    @Published var use24Hour: Bool { didSet { d.set(use24Hour, forKey: "use24Hour") } }
-    @Published var showSeconds: Bool { didSet { d.set(showSeconds, forKey: "showSeconds") } }
-    @Published var showDate: Bool { didSet { d.set(showDate, forKey: "showDate") } }
-    @Published var showZulu: Bool { didSet { d.set(showZulu, forKey: "showZulu") } }
+    @Published var use24Hour: Bool { didSet { save(use24Hour, forKey: "use24Hour") } }
+    @Published var showSeconds: Bool { didSet { save(showSeconds, forKey: "showSeconds") } }
+    @Published var showDate: Bool { didSet { save(showDate, forKey: "showDate") } }
+    @Published var showZulu: Bool { didSet { save(showZulu, forKey: "showZulu") } }
 
     // Weather
-    @Published var latitude: Double { didSet { d.set(latitude, forKey: "latitude") } }
-    @Published var longitude: Double { didSet { d.set(longitude, forKey: "longitude") } }
-    @Published var placeName: String { didSet { d.set(placeName, forKey: "placeName") } }
-    @Published var imperial: Bool { didSet { d.set(imperial, forKey: "imperial") } }
-    @Published var showAlerts: Bool { didSet { d.set(showAlerts, forKey: "showAlerts") } }
-    @Published var showLightning: Bool { didSet { d.set(showLightning, forKey: "showLightning") } }
-    @Published var lightningRadiusKm: Double { didSet { d.set(lightningRadiusKm, forKey: "lightningRadiusKm") } }
+    @Published var latitude: Double { didSet { save(latitude, forKey: "latitude") } }
+    @Published var longitude: Double { didSet { save(longitude, forKey: "longitude") } }
+    @Published var placeName: String { didSet { save(placeName, forKey: "placeName") } }
+    @Published var imperial: Bool { didSet { save(imperial, forKey: "imperial") } }
+    @Published var showAlerts: Bool { didSet { save(showAlerts, forKey: "showAlerts") } }
+    @Published var showLightning: Bool { didSet { save(showLightning, forKey: "showLightning") } }
+    @Published var lightningRadiusKm: Double { didSet { save(lightningRadiusKm, forKey: "lightningRadiusKm") } }
 
     // Calendar
-    @Published var excludedCalendars: [String] { didSet { d.set(excludedCalendars, forKey: "excludedCalendars") } }
-    @Published var hideFinishedEvents: Bool { didSet { d.set(hideFinishedEvents, forKey: "hideFinishedEvents") } }
-    @Published var maxEvents: Int { didSet { d.set(maxEvents, forKey: "maxEvents") } }
+    @Published var excludedCalendars: [String] { didSet { save(excludedCalendars, forKey: "excludedCalendars") } }
+    @Published var hideFinishedEvents: Bool { didSet { save(hideFinishedEvents, forKey: "hideFinishedEvents") } }
+    @Published var maxEvents: Int { didSet { save(maxEvents, forKey: "maxEvents") } }
 
     var hasLocation: Bool { !(latitude == 0 && longitude == 0) }
 
