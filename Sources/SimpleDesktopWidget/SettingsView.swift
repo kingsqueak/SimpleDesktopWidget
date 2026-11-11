@@ -85,6 +85,7 @@ struct SettingsView: View {
             }
             slider(s.frostedGlass ? "Background tint" : "Background opacity", $s.backgroundOpacity, 0...1, percent: true)
             slider("Whole display opacity", $s.displayOpacity, 0.15...1, percent: true)
+            slider("Text outline (halo)", $s.textHalo, 0...1, percent: true)
             slider("Drop shadow", $s.shadowStrength, 0...1, percent: true)
             slider("Size", $s.scale, 0.6...1.8, percent: true)
         }

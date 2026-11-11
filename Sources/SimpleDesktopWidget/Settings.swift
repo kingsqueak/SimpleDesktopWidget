@@ -60,6 +60,7 @@ final class Settings: ObservableObject {
     @Published var backgroundOpacity: Double { didSet { d.set(backgroundOpacity, forKey: "backgroundOpacity") } }
     @Published var displayOpacity: Double { didSet { d.set(displayOpacity, forKey: "displayOpacity") } }
     @Published var shadowStrength: Double { didSet { d.set(shadowStrength, forKey: "shadowStrength") } }
+    @Published var textHalo: Double { didSet { d.set(textHalo, forKey: "textHalo") } }
     @Published var frostedGlass: Bool { didSet { d.set(frostedGlass, forKey: "frostedGlass") } }
     @Published var keepIconsClear: Bool { didSet { d.set(keepIconsClear, forKey: "keepIconsClear") } }
 
@@ -101,6 +102,7 @@ final class Settings: ObservableObject {
         backgroundOpacity = dbl("backgroundOpacity", 0.45)
         displayOpacity = dbl("displayOpacity", 1.0)
         shadowStrength = dbl("shadowStrength", 0.7)
+        textHalo = dbl("textHalo", 0)
         frostedGlass = bool("frostedGlass", true)
         keepIconsClear = bool("keepIconsClear", true)
 
@@ -146,6 +148,12 @@ final class Settings: ObservableObject {
             }
             return .custom(fontFamily, size: size).weight(weight.swiftUI)
         }
+    }
+
+    /// Halo colour: the opposite of the text, so light text gets a dark edge and vice versa.
+    var haloColor: Color {
+        let lum = 0.2126 * textColor.r + 0.7152 * textColor.g + 0.0722 * textColor.b
+        return lum > 0.5 ? .black : .white
     }
 
     // Unit formatting (data is kept in °C, mm and m/s).

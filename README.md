@@ -21,7 +21,7 @@ The script signs with the local "Apple Development" identity when there is one, 
 
 ### Settings
 
-- **Appearance:** font (any installed family), clock and text weight, text and background colours, background opacity, whole-display opacity, drop-shadow strength, size.
+- **Appearance:** font (any installed family), clock and text weight, text and background colours, background opacity, whole-display opacity, text outline (halo, automatically dark for light text and light for dark text), drop-shadow strength, size.
 - **Frosted glass:** the card shows a blurred copy of the wallpaper behind it, so desktop icons under the widget are covered instead of showing through. It captures only the system wallpaper window (never icons or other windows) and needs Screen Recording permission.
 - **Keep icons clear:** Finder is scripted to move any desktop icon under the widget to the nearest free spot (when the widget is placed or resized, when something lands on the Desktop, when a disk mounts). Needs Automation permission for Finder and Finder's desktop "Sort By" set to None.
 - **Clock:** 12/24-hour, seconds, date.

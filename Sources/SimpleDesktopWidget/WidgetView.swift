@@ -98,6 +98,7 @@ struct WidgetCard: View {
             Divider().overlay(s.textColor.color.opacity(0.25))
             EventsView()
         }
+        .modifier(TextHalo(strength: s.textHalo, color: s.haloColor, scale: sc))
         .padding(22 * sc)
         .frame(width: 380 * sc, alignment: .leading)
         .foregroundStyle(s.textColor.color)
@@ -456,5 +457,25 @@ struct EventsView: View {
         let f = DateFormatter()
         f.dateFormat = s.use24Hour ? "HH:mm" : "h:mm a"
         return f.string(from: e.start).lowercased()
+    }
+}
+
+/// A thin, tight edge around every letter, icon and line so the text stays readable
+/// on wallpaper of the same colour (white on white). Three stacked tight shadows build
+/// a near-solid outline at full strength; it fades to nothing at 0.
+struct TextHalo: ViewModifier {
+    let strength: Double
+    let color: Color
+    let scale: Double
+
+    func body(content: Content) -> some View {
+        if strength <= 0.01 {
+            content
+        } else {
+            content
+                .shadow(color: color.opacity(min(1, strength * 1.2)), radius: 0.6 * scale)
+                .shadow(color: color.opacity(strength * 0.9), radius: 1.2 * scale)
+                .shadow(color: color.opacity(strength * 0.6), radius: 2.5 * scale)
+        }
     }
 }
