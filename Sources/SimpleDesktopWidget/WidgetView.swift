@@ -191,7 +191,10 @@ struct WeatherView: View {
                     }
                 }
                 if let msg = weather.message {
-                    Text(msg).font(s.font(10 * sc, s.textWeight)).opacity(0.6)
+                    Label(msg, systemImage: "exclamationmark.triangle.fill")
+                        .font(s.font(11 * sc, s.textWeight))
+                        .foregroundStyle(.yellow)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }

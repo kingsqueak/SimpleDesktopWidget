@@ -23,6 +23,7 @@ final class WeatherModel: ObservableObject {
     @Published var loading = false
 
     private var timer: Timer?
+    private var windyWarning: String?
     private let settings = Settings.shared
 
     func start() {
@@ -49,7 +50,7 @@ final class WeatherModel: ObservableObject {
             do {
                 let result = useWindy ? try await fetchWindy() : try await fetchOpenMeteo()
                 days = result
-                message = result.isEmpty ? "No forecast data returned" : nil
+                message = result.isEmpty ? "No forecast data returned" : (useWindy ? windyWarning : nil)
                 updated = Date()
                 sourceLabel = useWindy ? "Windy · \(Self.modelName(settings.windyModel))" : "Open-Meteo"
             } catch {
@@ -104,6 +105,9 @@ final class WeatherModel: ObservableObject {
             let msg = (obj["message"] as? String) ?? (obj["error"] as? String) ?? "HTTP \(http.statusCode)"
             throw WindyError(text: "Windy: \(msg)")
         }
+
+        // The free testing tier says so in a "warning" field; its numbers are scrambled.
+        windyWarning = (obj["warning"] as? String).map { _ in "Windy testing key: these numbers are scrambled sample data" }
 
         func series(_ prefix: String) -> [Double?] {
             guard let key = obj.keys.first(where: { $0.hasPrefix(prefix + "-") }),
