@@ -26,6 +26,8 @@ The script signs with the local "Apple Development" identity when there is one, 
 - **Keep icons clear:** Finder is scripted to move any desktop icon under the widget to the nearest free spot (when the widget is placed or resized, when something lands on the Desktop, when a disk mounts). Needs Automation permission for Finder and Finder's desktop "Sort By" set to None.
 - **Clock:** 12/24-hour, seconds, date.
 - **Weather:** Open-Meteo (free, no key). Location by search, current location, or saved coordinates. Refreshes every 30 minutes.
+- **Alerts:** active National Weather Service warnings, watches and advisories for the location (api.weather.gov, US only, checked every 5 minutes), as coloured banners above the forecast.
+- **Lightning:** live strikes from the Blitzortung.org volunteer network within a chosen radius (default 25 mi) over the last 30 minutes: nearest distance and direction, count, how long ago; red within 10 mi. The widget receives the worldwide strike stream and filters locally, so no location is sent. Free for personal use, no guarantees, not for safety decisions.
 - **Calendar:** which calendars to show, hide finished events, how many to list.
 - **Start at login.**
 

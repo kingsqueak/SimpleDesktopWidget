@@ -74,6 +74,9 @@ final class Settings: ObservableObject {
     @Published var longitude: Double { didSet { d.set(longitude, forKey: "longitude") } }
     @Published var placeName: String { didSet { d.set(placeName, forKey: "placeName") } }
     @Published var imperial: Bool { didSet { d.set(imperial, forKey: "imperial") } }
+    @Published var showAlerts: Bool { didSet { d.set(showAlerts, forKey: "showAlerts") } }
+    @Published var showLightning: Bool { didSet { d.set(showLightning, forKey: "showLightning") } }
+    @Published var lightningRadiusKm: Double { didSet { d.set(lightningRadiusKm, forKey: "lightningRadiusKm") } }
 
     // Calendar
     @Published var excludedCalendars: [String] { didSet { d.set(excludedCalendars, forKey: "excludedCalendars") } }
@@ -112,6 +115,9 @@ final class Settings: ObservableObject {
         longitude = dbl("longitude", 0)
         placeName = str("placeName", "")
         imperial = bool("imperial", true)
+        showAlerts = bool("showAlerts", true)
+        showLightning = bool("showLightning", true)
+        lightningRadiusKm = dbl("lightningRadiusKm", 25 * 1.609344)
 
         excludedCalendars = (d.array(forKey: "excludedCalendars") as? [String]) ?? []
         hideFinishedEvents = bool("hideFinishedEvents", false)
@@ -154,6 +160,10 @@ final class Settings: ObservableObject {
             return inch < 0.01 ? "0\"" : String(format: "%.2f\"", inch)
         }
         return mm < 0.1 ? "0 mm" : String(format: mm < 10 ? "%.1f mm" : "%.0f mm", mm)
+    }
+
+    func distance(_ km: Double) -> String {
+        imperial ? "\(Int((km / 1.609344).rounded())) mi" : "\(Int(km.rounded())) km"
     }
 
     func wind(_ ms: Double) -> String {

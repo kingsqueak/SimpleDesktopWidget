@@ -7,6 +7,8 @@ struct SettingsView: View {
     @EnvironmentObject var cal: CalendarModel
     @EnvironmentObject var backdrop: WallpaperBackdrop
     @EnvironmentObject var icons: IconMover
+    @EnvironmentObject var alerts: AlertsModel
+    @EnvironmentObject var lightning: LightningMonitor
     @StateObject private var finder = LocationFinder()
     @State private var placeQuery = ""
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -35,6 +37,15 @@ struct SettingsView: View {
             .padding(.horizontal, 20).padding(.vertical, 12)
         }
         .frame(width: 500, height: 720)
+    }
+
+    /// Lightning radius in the user's units (stored in km).
+    private var radiusBinding: Binding<Double> {
+        Binding(get: {
+                    let v = s.imperial ? s.lightningRadiusKm / 1.609344 : s.lightningRadiusKm
+                    return (v / 5).rounded() * 5
+                },
+                set: { s.lightningRadiusKm = s.imperial ? $0 * 1.609344 : $0 })
     }
 
     private func color(_ kp: ReferenceWritableKeyPath<Settings, RGBA>) -> Binding<Color> {
@@ -96,6 +107,24 @@ struct SettingsView: View {
             }
             Text("Forecast from Open-Meteo (free, no key), refreshed every 30 minutes.")
                 .font(.caption).foregroundStyle(.secondary)
+
+            Toggle("Show National Weather Service alerts", isOn: $s.showAlerts)
+                .onChange(of: s.showAlerts) { alerts.refresh() }
+            if s.showAlerts {
+                Text(alerts.message ?? "Warnings, watches and advisories for your location (US only), checked every 5 minutes. \(alerts.alerts.isEmpty ? "None active right now." : "\(alerts.alerts.count) active.")")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Toggle("Show nearby lightning", isOn: $s.showLightning)
+                .onChange(of: s.showLightning) { lightning.apply() }
+            if s.showLightning {
+                Stepper(value: radiusBinding, in: 5...150, step: 5) {
+                    Text("Within \(Int(radiusBinding.wrappedValue)) \(s.imperial ? "miles" : "km")")
+                }
+                .onChange(of: s.lightningRadiusKm) { lightning.apply() }
+                Text("Live strikes from the Blitzortung.org volunteer network (\(lightning.status.lowercased())). Shown only when there have been strikes within the radius in the last 30 minutes. Free for personal use, not guaranteed: not for safety decisions.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
 
             LabeledContent("Location") {
                 Text(s.hasLocation ? "\(s.placeName)  (\(String(format: "%.3f, %.3f", s.latitude, s.longitude)))" : "Not set")

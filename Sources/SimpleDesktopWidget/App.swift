@@ -31,6 +31,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let mover = WindowMover()
     let backdrop = WallpaperBackdrop()
     let iconMover = IconMover()
+    let alerts = AlertsModel()
+    let lightning = LightningMonitor()
 
     var widget: WidgetWindow!
     var settingsWindow: NSWindow?
@@ -67,6 +69,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .environmentObject(calendar)
             .environmentObject(mover)
             .environmentObject(backdrop)
+            .environmentObject(alerts)
+            .environmentObject(lightning)
         let host = NSHostingView(rootView: root)
         host.sizingOptions = []
         widget.contentView = host
@@ -95,6 +99,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         calendar.start()
         backdrop.start()
         iconMover.start()
+        alerts.start()
+        lightning.start()
+        NotificationCenter.default.addObserver(forName: .widgetLocationChanged, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.alerts.refresh(); self?.lightning.apply() }
+        }
         if settings.frostedGlass { backdrop.requestPermission() }
 
         // First run: open the settings so the user can set up weather and place the widget.
@@ -111,7 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc func configure() { state.configuring = true; settingsWindow?.makeKeyAndOrderFront(nil); NSApp.activate() }
-    @objc func refreshNow() { weather.refresh(); calendar.reload() }
+    @objc func refreshNow() { weather.refresh(); calendar.reload(); alerts.refresh() }
     @objc func quit() { NSApp.terminate(nil) }
 
     private func applyConfiguring(_ on: Bool) {
@@ -134,6 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .environmentObject(calendar)
                 .environmentObject(backdrop)
                 .environmentObject(iconMover)
+                .environmentObject(alerts)
+                .environmentObject(lightning)
             let w = NSWindow(contentViewController: NSHostingController(rootView: view))
             w.title = "SimpleDesktopWidget"
             w.styleMask = [.titled, .closable, .miniaturizable]

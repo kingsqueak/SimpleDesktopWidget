@@ -191,6 +191,8 @@ struct ClockView: View {
 struct WeatherView: View {
     @EnvironmentObject var s: Settings
     @EnvironmentObject var weather: WeatherModel
+    @EnvironmentObject var alerts: AlertsModel
+    @EnvironmentObject var lightning: LightningMonitor
 
     var body: some View {
         let sc = s.scale
@@ -204,6 +206,10 @@ struct WeatherView: View {
             }
             .font(s.font(12 * sc, s.textWeight))
             .opacity(0.85)
+
+            if s.showAlerts {
+                ForEach(alerts.alerts.prefix(3)) { a in AlertBanner(alert: a) }
+            }
 
             if weather.days.isEmpty {
                 Text(weather.message ?? (weather.loading ? "Loading forecast…" : "No forecast"))
@@ -226,6 +232,66 @@ struct WeatherView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+
+            if s.showLightning, let l = lightning.summary {
+                LightningLine(summary: l)
+            }
+        }
+    }
+}
+
+struct AlertBanner: View {
+    @EnvironmentObject var s: Settings
+    let alert: WeatherAlert
+
+    var body: some View {
+        let sc = s.scale
+        HStack(spacing: 7 * sc) {
+            Image(systemName: alert.symbol)
+                .font(.system(size: 14 * sc, weight: .bold))
+            Text(alert.event)
+                .font(s.font(13 * sc, .bold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 4)
+            if let end = alert.ends {
+                Text("until \(end.formatted(date: Calendar.current.isDateInToday(end) ? .omitted : .abbreviated, time: .shortened))")
+                    .font(s.font(11 * sc, s.textWeight))
+                    .lineLimit(1)
+                    .opacity(0.9)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10 * sc).padding(.vertical, 6 * sc)
+        .background(RoundedRectangle(cornerRadius: 8 * sc, style: .continuous).fill(alert.color.opacity(0.85)))
+        .help(alert.headline)
+    }
+}
+
+struct LightningLine: View {
+    @EnvironmentObject var s: Settings
+    let summary: LightningMonitor.Summary
+
+    var body: some View {
+        let sc = s.scale
+        let close = summary.nearestKm <= 16     // ~10 miles: the usual "go indoors" distance
+        TimelineView(.periodic(from: .now, by: 30)) { ctx in
+            let mins = max(0, Int(ctx.date.timeIntervalSince(summary.latest) / 60))
+            HStack(spacing: 6 * sc) {
+                Image(systemName: "bolt.fill")
+                    .foregroundStyle(close ? .red : .yellow)
+                    .font(.system(size: 14 * sc, weight: .bold))
+                Text("Lightning \(s.distance(summary.nearestKm)) \(LightningMonitor.compass(summary.nearestBearing))")
+                    .font(s.font(13 * sc, .bold))
+                Spacer(minLength: 4)
+                Text("\(summary.count) in 30 min · \(mins == 0 ? "now" : "\(mins) min ago")")
+                    .font(s.font(11 * sc, s.textWeight))
+                    .opacity(0.8)
+            }
+            .lineLimit(1)
+            .padding(.horizontal, 10 * sc).padding(.vertical, 6 * sc)
+            .background(RoundedRectangle(cornerRadius: 8 * sc, style: .continuous)
+                .fill((close ? Color.red : Color.yellow).opacity(0.18)))
         }
     }
 }
