@@ -7,11 +7,13 @@
 	<key>CFBundleIdentifier</key><string>com.kingsqueak.SimpleDesktopWidget</string>
 	<key>CFBundleExecutable</key><string>SimpleDesktopWidget</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>0.1.0</string>
-	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleShortVersionString</key><string>__VERSION__</string>
+	<key>CFBundleVersion</key><string>__VERSION__</string>
 	<key>LSMinimumSystemVersion</key><string>15.0</string>
 	<key>LSUIElement</key><true/>
 	<key>NSHighResolutionCapable</key><true/>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
+	<key>NSHumanReadableCopyright</key><string>© 2026 KC2RGW Chris. GPL-3.0-or-later.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key><string>Shows today's events on the desktop widget.</string>
 	<key>NSCalendarsUsageDescription</key><string>Shows today's events on the desktop widget.</string>
 	<key>NSLocationWhenInUseUsageDescription</key><string>Finds your location for the weather forecast.</string>

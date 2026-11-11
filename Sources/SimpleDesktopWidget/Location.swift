@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 KC2RGW Chris
+
 import CoreLocation
 
 /// One-shot "where am I" plus place-name lookups for the weather location.

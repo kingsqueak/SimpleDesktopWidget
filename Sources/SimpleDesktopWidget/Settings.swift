@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 KC2RGW Chris
+
 import AppKit
 import SwiftUI
 
@@ -103,8 +106,8 @@ final class Settings: ObservableObject {
         displayOpacity = dbl("displayOpacity", 1.0)
         shadowStrength = dbl("shadowStrength", 0.7)
         textHalo = dbl("textHalo", 0)
-        frostedGlass = bool("frostedGlass", true)
-        keepIconsClear = bool("keepIconsClear", true)
+        frostedGlass = bool("frostedGlass", false)    // asks for Screen Recording, so opt-in
+        keepIconsClear = bool("keepIconsClear", false)  // moves the user's icons, so opt-in
 
         use24Hour = bool("use24Hour", false)
         showSeconds = bool("showSeconds", true)
@@ -118,7 +121,7 @@ final class Settings: ObservableObject {
         placeName = str("placeName", "")
         imperial = bool("imperial", true)
         showAlerts = bool("showAlerts", true)
-        showLightning = bool("showLightning", true)
+        showLightning = bool("showLightning", false)    // Blitzortung is volunteer-run: opt-in
         lightningRadiusKm = dbl("lightningRadiusKm", 25 * 1.609344)
 
         excludedCalendars = (d.array(forKey: "excludedCalendars") as? [String]) ?? []

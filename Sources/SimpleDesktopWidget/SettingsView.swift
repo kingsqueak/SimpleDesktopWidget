@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2026 KC2RGW Chris
+
 import ServiceManagement
 import SwiftUI
 
@@ -27,6 +30,8 @@ struct SettingsView: View {
             .formStyle(.grouped)
 
             HStack {
+                Text("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")")
+                    .font(.callout).foregroundStyle(.tertiary)
                 Text("Drag the widget to place it. Done locks it in place and clears icons from under it.")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()
