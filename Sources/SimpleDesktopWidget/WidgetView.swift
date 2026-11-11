@@ -150,10 +150,19 @@ struct ClockView: View {
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                if s.showDate {
-                    Text(d.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                        .font(s.font(17 * sc, s.textWeight))
-                        .opacity(0.85)
+                if s.showDate || s.showZulu {
+                    HStack(alignment: .firstTextBaseline) {
+                        if s.showDate {
+                            Text(d.formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                        }
+                        Spacer(minLength: 8 * sc)
+                        if s.showZulu {
+                            Text(zulu(d)).monospacedDigit()
+                        }
+                    }
+                    .font(s.font(17 * sc, s.textWeight))
+                    .lineLimit(1)
+                    .opacity(0.85)
                 }
             }
         }
@@ -168,6 +177,13 @@ struct ClockView: View {
     private func hm(_ d: Date) -> String { fmt(s.use24Hour ? "HH:mm" : "h:mm", d) }
     private func sec(_ d: Date) -> String { fmt("ss", d) }
     private func ampm(_ d: Date) -> String { fmt("a", d) }
+    private func zulu(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "HH:mm'Z'"
+        return f.string(from: d)
+    }
 }
 
 // MARK: Weather

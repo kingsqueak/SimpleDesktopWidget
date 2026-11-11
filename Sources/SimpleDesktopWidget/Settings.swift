@@ -67,6 +67,7 @@ final class Settings: ObservableObject {
     @Published var use24Hour: Bool { didSet { d.set(use24Hour, forKey: "use24Hour") } }
     @Published var showSeconds: Bool { didSet { d.set(showSeconds, forKey: "showSeconds") } }
     @Published var showDate: Bool { didSet { d.set(showDate, forKey: "showDate") } }
+    @Published var showZulu: Bool { didSet { d.set(showZulu, forKey: "showZulu") } }
 
     // Weather
     @Published var latitude: Double { didSet { d.set(latitude, forKey: "latitude") } }
@@ -103,6 +104,7 @@ final class Settings: ObservableObject {
         use24Hour = bool("use24Hour", false)
         showSeconds = bool("showSeconds", true)
         showDate = bool("showDate", true)
+        showZulu = bool("showZulu", true)
 
         // Windy support was removed; drop its saved key and choices.
         for k in ["weatherProvider", "windyKey", "windyModel"] { d.removeObject(forKey: k) }

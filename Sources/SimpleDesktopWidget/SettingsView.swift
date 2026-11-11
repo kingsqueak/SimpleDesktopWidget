@@ -84,6 +84,7 @@ struct SettingsView: View {
             Toggle("24-hour time", isOn: $s.use24Hour)
             Toggle("Show seconds", isOn: $s.showSeconds)
             Toggle("Show date", isOn: $s.showDate)
+            Toggle("Show Zulu (UTC) time, 24-hour", isOn: $s.showZulu)
         }
     }
 
