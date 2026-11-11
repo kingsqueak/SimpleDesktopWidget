@@ -15,6 +15,7 @@
 	<key>NSCalendarsFullAccessUsageDescription</key><string>Shows today's events on the desktop widget.</string>
 	<key>NSCalendarsUsageDescription</key><string>Shows today's events on the desktop widget.</string>
 	<key>NSLocationWhenInUseUsageDescription</key><string>Finds your location for the weather forecast.</string>
+	<key>NSAppleEventsUsageDescription</key><string>Moves desktop icons out from under the widget.</string>
 	<key>NSLocationUsageDescription</key><string>Finds your location for the weather forecast.</string>
 </dict>
 </plist>

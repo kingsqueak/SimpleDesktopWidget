@@ -6,6 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject var weather: WeatherModel
     @EnvironmentObject var cal: CalendarModel
     @EnvironmentObject var backdrop: WallpaperBackdrop
+    @EnvironmentObject var icons: IconMover
     @StateObject private var finder = LocationFinder()
     @State private var placeQuery = ""
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -24,7 +25,7 @@ struct SettingsView: View {
             .formStyle(.grouped)
 
             HStack {
-                Text("Drag the widget to place it. Done locks it in place.")
+                Text("Drag the widget to place it. Done locks it in place and clears icons from under it.")
                     .font(.callout).foregroundStyle(.secondary)
                 Spacer()
                 Button("Done") { onDone() }
@@ -66,6 +67,11 @@ struct SettingsView: View {
                     NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
                 }
             }
+            Toggle("Move desktop icons out of the widget's way", isOn: $s.keepIconsClear)
+                .onChange(of: s.keepIconsClear) { _, on in if on { icons.schedule(after: 0.2) } }
+            if s.keepIconsClear, let e = icons.lastError {
+                Text(e).font(.caption).foregroundStyle(.red)
+            }
             slider(s.frostedGlass ? "Background tint" : "Background opacity", $s.backgroundOpacity, 0...1, percent: true)
             slider("Whole display opacity", $s.displayOpacity, 0.15...1, percent: true)
             slider("Drop shadow", $s.shadowStrength, 0...1, percent: true)
@@ -83,27 +89,12 @@ struct SettingsView: View {
 
     private var weatherSection: some View {
         Section {
-            Picker("Source", selection: $s.weatherProvider) {
-                Text("Windy").tag("windy")
-                Text("Open-Meteo (free, no key)").tag("openmeteo")
-            }
-            .onChange(of: s.weatherProvider) { weather.refresh() }
-
-            if s.weatherProvider == "windy" {
-                SecureField("Windy API key", text: $s.windyKey, prompt: Text("Point Forecast API key"))
-                    .onSubmit { weather.refresh() }
-                Picker("Forecast model", selection: $s.windyModel) {
-                    ForEach(WeatherModel.windyModels, id: \.id) { Text($0.name).tag($0.id) }
-                }
-                .onChange(of: s.windyModel) { weather.refresh() }
-                Text("Get a Point Forecast API key at api.windy.com/keys. Windy's free “testing” key returns deliberately scrambled numbers; real forecasts need a paid key.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-
             Picker("Units", selection: $s.imperial) {
                 Text("°F, inches, mph").tag(true)
                 Text("°C, mm, km/h").tag(false)
             }
+            Text("Forecast from Open-Meteo (free, no key), refreshed every 30 minutes.")
+                .font(.caption).foregroundStyle(.secondary)
 
             LabeledContent("Location") {
                 Text(s.hasLocation ? "\(s.placeName)  (\(String(format: "%.3f, %.3f", s.latitude, s.longitude)))" : "Not set")

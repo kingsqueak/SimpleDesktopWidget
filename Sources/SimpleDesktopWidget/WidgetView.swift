@@ -18,7 +18,22 @@ final class WindowMover: ObservableObject {
             startOrigin = w.frame.origin
         }
         guard let s = startMouse else { return }
-        w.setFrameOrigin(NSPoint(x: startOrigin.x + m.x - s.x, y: startOrigin.y + m.y - s.y))
+        var origin = NSPoint(x: startOrigin.x + m.x - s.x, y: startOrigin.y + m.y - s.y)
+
+        // Snap the card (not the transparent margin) to the edges of the usable desktop,
+        // and never let it go up under the menu bar.
+        let screen = NSScreen.screens.first { $0.frame.contains(m) } ?? w.screen ?? NSScreen.main
+        if let vf = screen?.visibleFrame {
+            let mg = WidgetMetrics.margin, snap: CGFloat = 14, gap: CGFloat = 0
+            let size = w.frame.size
+            let cardLeft = origin.x + mg, cardRight = origin.x + size.width - mg
+            let cardBottom = origin.y + mg, cardTop = origin.y + size.height - mg
+            if cardTop > vf.maxY - snap { origin.y = vf.maxY - gap - size.height + mg }
+            if cardBottom < vf.minY + snap && cardBottom > vf.minY - snap { origin.y = vf.minY + gap - mg }
+            if abs(cardLeft - vf.minX) < snap { origin.x = vf.minX + gap - mg }
+            if abs(cardRight - vf.maxX) < snap { origin.x = vf.maxX - gap - size.width + mg }
+        }
+        w.setFrameOrigin(origin)
         onDrag()
     }
 
@@ -169,9 +184,7 @@ struct WeatherView: View {
                 Text(s.placeName.isEmpty ? "Weather" : s.placeName)
                     .lineLimit(1)
                 Spacer(minLength: 6)
-                if !weather.sourceLabel.isEmpty {
-                    Text(weather.sourceLabel).opacity(0.6)
-                }
+                Text(weather.sourceLabel).opacity(0.6)
             }
             .font(s.font(12 * sc, s.textWeight))
             .opacity(0.85)

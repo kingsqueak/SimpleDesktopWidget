@@ -17,6 +17,9 @@ enum Main {
 final class WidgetWindow: NSWindow {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
+    /// Don't let AppKit push the window down below the menu bar: only the card has to
+    /// stay on screen, the transparent shadow margin around it can go off the edge.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
 @MainActor
@@ -27,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let calendar = CalendarModel()
     let mover = WindowMover()
     let backdrop = WallpaperBackdrop()
+    let iconMover = IconMover()
 
     var widget: WidgetWindow!
     var settingsWindow: NSWindow?
@@ -53,6 +57,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         mover.onMoved = { [weak self] in self?.savePosition(); self?.backdrop.crop() }
         mover.onDrag = { [weak self] in self?.backdrop.crop(throttled: true) }
         backdrop.window = widget
+        iconMover.window = widget
+        iconMover.isPaused = { [weak self] in self?.state.configuring ?? false }
 
         let root = WidgetRoot(onSize: { [weak self] size in self?.resizeWidget(to: size) })
             .environmentObject(settings)
@@ -88,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         weather.start()
         calendar.start()
         backdrop.start()
+        iconMover.start()
         if settings.frostedGlass { backdrop.requestPermission() }
 
         // First run: open the settings so the user can set up weather and place the widget.
@@ -114,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         } else {
             widget.level = Self.desktopLevel
             savePosition()
+            iconMover.schedule(after: 0.3)
             if let w = settingsWindow, w.isVisible { w.close() }
         }
     }
@@ -125,6 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 .environmentObject(weather)
                 .environmentObject(calendar)
                 .environmentObject(backdrop)
+                .environmentObject(iconMover)
             let w = NSWindow(contentViewController: NSHostingController(rootView: view))
             w.title = "SimpleDesktopWidget"
             w.styleMask = [.titled, .closable, .miniaturizable]
@@ -152,6 +161,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         if abs(f.width - size.width) < 0.5 && abs(f.height - size.height) < 0.5 { return }
         widget.setFrame(NSRect(x: f.minX, y: f.maxY - size.height, width: size.width, height: size.height), display: true)
         backdrop.crop()
+        iconMover.schedule(after: 1)
         if needsDefaultPlacement {
             needsDefaultPlacement = false
             placeTopRight()

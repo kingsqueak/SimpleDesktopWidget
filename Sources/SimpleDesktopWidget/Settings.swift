@@ -61,6 +61,7 @@ final class Settings: ObservableObject {
     @Published var displayOpacity: Double { didSet { d.set(displayOpacity, forKey: "displayOpacity") } }
     @Published var shadowStrength: Double { didSet { d.set(shadowStrength, forKey: "shadowStrength") } }
     @Published var frostedGlass: Bool { didSet { d.set(frostedGlass, forKey: "frostedGlass") } }
+    @Published var keepIconsClear: Bool { didSet { d.set(keepIconsClear, forKey: "keepIconsClear") } }
 
     // Clock
     @Published var use24Hour: Bool { didSet { d.set(use24Hour, forKey: "use24Hour") } }
@@ -68,9 +69,6 @@ final class Settings: ObservableObject {
     @Published var showDate: Bool { didSet { d.set(showDate, forKey: "showDate") } }
 
     // Weather
-    @Published var weatherProvider: String { didSet { d.set(weatherProvider, forKey: "weatherProvider") } }
-    @Published var windyKey: String { didSet { d.set(windyKey, forKey: "windyKey") } }
-    @Published var windyModel: String { didSet { d.set(windyModel, forKey: "windyModel") } }
     @Published var latitude: Double { didSet { d.set(latitude, forKey: "latitude") } }
     @Published var longitude: Double { didSet { d.set(longitude, forKey: "longitude") } }
     @Published var placeName: String { didSet { d.set(placeName, forKey: "placeName") } }
@@ -100,14 +98,14 @@ final class Settings: ObservableObject {
         displayOpacity = dbl("displayOpacity", 1.0)
         shadowStrength = dbl("shadowStrength", 0.7)
         frostedGlass = bool("frostedGlass", true)
+        keepIconsClear = bool("keepIconsClear", true)
 
         use24Hour = bool("use24Hour", false)
         showSeconds = bool("showSeconds", true)
         showDate = bool("showDate", true)
 
-        weatherProvider = str("weatherProvider", "windy")
-        windyKey = str("windyKey", "")
-        windyModel = str("windyModel", "gfs")
+        // Windy support was removed; drop its saved key and choices.
+        for k in ["weatherProvider", "windyKey", "windyModel"] { d.removeObject(forKey: k) }
         latitude = dbl("latitude", 0)
         longitude = dbl("longitude", 0)
         placeName = str("placeName", "")
