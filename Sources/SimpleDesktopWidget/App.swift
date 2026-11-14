@@ -46,7 +46,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var settingsWindow: NSWindow?
     var statusItem: NSStatusItem!
     var bag = Set<AnyCancellable>()
-    var needsDefaultPlacement = false
 
     /// Just above the desktop icons, below every normal window.
     /// Icons that land under the widget are hidden behind it rather than drawn on top.
@@ -84,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         widget.contentView = host
         host.menu = makeMenu()                   // right-click on the widget
 
-        let firstRun = UserDefaults.standard.object(forKey: "widgetTopLeftX") == nil
+        let firstRun = UserDefaults.standard.object(forKey: "widgetTopLeftX") == nil && UserDefaults.standard.object(forKey: "anchorDX") == nil
         placeInitially()
         widget.orderFront(nil)
 
@@ -97,11 +96,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .removeDuplicates()
             .sink { [weak self] on in self?.applyConfiguring(on) }
             .store(in: &bag)
-
-        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
-                                               object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.keepOnScreen() }
-        }
 
         weather.start()
         calendar.start()
@@ -172,52 +166,125 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
     }
 
-    // MARK: Position (stored as the top-left corner, so the widget grows downward)
+    // MARK: Position
+    //
+    // Saved relative to the nearest corner of the screen the card is on: which screen,
+    // left or right, top or bottom, and the gaps from those edges of the usable desktop.
+    // Changes of size, resolution, or a monitor sleeping and waking can't shift it; only
+    // dragging it (and Done) saves a new spot. Anything else that moves the window
+    // (macOS during display changes) is undone by re-applying the saved spot.
+
+    private struct Anchor {
+        var screen: String
+        var right: Bool
+        var bottom: Bool
+        var dx: CGFloat
+        var dy: CGFloat
+    }
+
+    private var anchor: Anchor?
+    private var screenChangeWork: DispatchWorkItem?
+    private var healTimer: Timer?
+
+    private func loadAnchor() -> Anchor? {
+        let d = UserDefaults.standard
+        guard d.object(forKey: "anchorDX") != nil else { return nil }
+        return Anchor(screen: d.string(forKey: "anchorScreen") ?? "", right: d.bool(forKey: "anchorRight"),
+                      bottom: d.bool(forKey: "anchorBottom"),
+                      dx: CGFloat(d.double(forKey: "anchorDX")), dy: CGFloat(d.double(forKey: "anchorDY")))
+    }
+
+    private func screen(named name: String) -> NSScreen? {
+        NSScreen.screens.first { $0.localizedName == name } ?? NSScreen.main ?? NSScreen.screens.first
+    }
+
+    /// Window frame for the saved anchor at a given window size.
+    private func frame(for a: Anchor, size: CGSize) -> NSRect? {
+        guard let vf = screen(named: a.screen)?.visibleFrame else { return nil }
+        let m = WidgetMetrics.margin
+        let cardW = size.width - 2 * m, cardH = size.height - 2 * m
+        let cardX = a.right ? vf.maxX - a.dx - cardW : vf.minX + a.dx
+        let cardY = a.bottom ? vf.minY + a.dy : vf.maxY - a.dy - cardH
+        return NSRect(x: cardX - m, y: cardY - m, width: size.width, height: size.height)
+    }
+
+    /// Put the window where the saved anchor says, unless the user is dragging it.
+    private func applyAnchor(size: CGSize? = nil) {
+        guard let a = anchor, !state.configuring || size != nil else { return }
+        let sz = size ?? widget.frame.size
+        guard let f = frame(for: a, size: sz) else { return }
+        if f.integral != widget.frame.integral {
+            widget.setFrame(f, display: true)
+            backdrop.crop()
+            iconMover.schedule(after: 1)
+        }
+    }
 
     private func resizeWidget(to size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
         let f = widget.frame
         if abs(f.width - size.width) < 0.5 && abs(f.height - size.height) < 0.5 { return }
-        widget.setFrame(NSRect(x: f.minX, y: f.maxY - size.height, width: size.width, height: size.height), display: true)
+        if anchor == nil {
+            // First run: start at the top right, 24 pt in from the corner.
+            anchor = Anchor(screen: NSScreen.main?.localizedName ?? "", right: true, bottom: false, dx: 24, dy: 24)
+        }
+        applyAnchor(size: size)
         backdrop.crop()
         iconMover.schedule(after: 1)
-        if needsDefaultPlacement {
-            needsDefaultPlacement = false
-            placeTopRight()
-        }
     }
 
-    /// Card about 24 pt in from the top-right of the main screen (the window has a transparent shadow margin).
-    private func placeTopRight() {
-        guard let s = NSScreen.main?.visibleFrame else { return }
-        let m = WidgetMetrics.margin
-        widget.setFrameTopLeftPoint(NSPoint(x: s.maxX - widget.frame.width + m - 24, y: s.maxY + m - 24))
-        savePosition()
-        backdrop.crop()
-    }
-
+    /// Save the card's current spot (after a drag or Done) relative to its nearest corner.
     private func savePosition() {
+        let m = WidgetMetrics.margin
+        let card = widget.frame.insetBy(dx: m, dy: m)
+        let center = NSPoint(x: card.midX, y: card.midY)
+        guard let scr = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? widget.screen ?? NSScreen.main
+        else { return }
+        let vf = scr.visibleFrame
+        let left = card.minX - vf.minX, right = vf.maxX - card.maxX
+        let top = vf.maxY - card.maxY, bottom = card.minY - vf.minY
+        let a = Anchor(screen: scr.localizedName, right: right < left, bottom: bottom < top,
+                       dx: max(0, min(left, right)).rounded(), dy: max(0, min(top, bottom)).rounded())
+        anchor = a
         let d = UserDefaults.standard
-        d.set(Double(widget.frame.minX), forKey: "widgetTopLeftX")
-        d.set(Double(widget.frame.maxY), forKey: "widgetTopLeftY")
+        d.set(a.screen, forKey: "anchorScreen")
+        d.set(a.right, forKey: "anchorRight")
+        d.set(a.bottom, forKey: "anchorBottom")
+        d.set(Double(a.dx), forKey: "anchorDX")
+        d.set(Double(a.dy), forKey: "anchorDY")
+        d.removeObject(forKey: "widgetTopLeftX")     // the old absolute position
+        d.removeObject(forKey: "widgetTopLeftY")
     }
 
     private func placeInitially() {
+        anchor = loadAnchor()
         let d = UserDefaults.standard
-        if d.object(forKey: "widgetTopLeftX") != nil {
-            let x = d.double(forKey: "widgetTopLeftX"), y = d.double(forKey: "widgetTopLeftY")
-            widget.setFrameTopLeftPoint(NSPoint(x: x, y: y))
-            keepOnScreen()
-        } else {
-            needsDefaultPlacement = true      // done once SwiftUI reports the real size
+        if anchor == nil, d.object(forKey: "widgetTopLeftX") != nil {
+            // Older versions saved an absolute top-left point: convert it once.
+            widget.setFrameTopLeftPoint(NSPoint(x: d.double(forKey: "widgetTopLeftX"), y: d.double(forKey: "widgetTopLeftY")))
+            savePosition()
         }
-    }
+        applyAnchor()
 
-    /// If a display went away, bring the widget back onto one that's there.
-    private func keepOnScreen() {
-        let f = widget.frame
-        let core = f.insetBy(dx: 60, dy: 60)
-        if NSScreen.screens.contains(where: { $0.frame.intersects(core) }) { return }
-        placeTopRight()
+        // Displays sleeping, waking or changing: wait for things to settle, then put it back.
+        let reapply: () -> Void = { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.screenChangeWork?.cancel()
+                let work = DispatchWorkItem { [weak self] in Task { @MainActor in self?.applyAnchor() } }
+                self.screenChangeWork = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: work)
+            }
+        }
+        NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification,
+                                               object: nil, queue: .main) { _ in reapply() }
+        let ws = NSWorkspace.shared.notificationCenter
+        for n in [NSWorkspace.screensDidWakeNotification, NSWorkspace.didWakeNotification, NSWorkspace.activeSpaceDidChangeNotification] {
+            ws.addObserver(forName: n, object: nil, queue: .main) { _ in reapply() }
+        }
+        // And a slow self-check, in case something moved it without telling us.
+        healTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.applyAnchor() }
+        }
     }
 }
